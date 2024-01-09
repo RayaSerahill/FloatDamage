@@ -1,0 +1,12 @@
+# Prefix for the FloatingDamage
+prefix: "&c-"
+
+# Suffix for the FloatingDamage
+suffix: ""
+
+# Which entities should spawn Floating Damage indicators when damaged?
+# Possible values: ALL, MONSTER, ANIMAL, PLAYER, OTHER
+enabled:
+  monster: true
+  animal: false
+  player: true

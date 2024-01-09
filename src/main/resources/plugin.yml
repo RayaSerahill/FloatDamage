@@ -1,7 +1,6 @@
 name: FloatDamage
-version: '1.0'
+version: '1.1'
 main: net.serahill.floatdamage.FloatDamage
-api-version: 1.19
-prefix: Floating Damage
-authors: [ Serahill ]
+api-version: '1.20'
+authors: [ Raya Serahill ]
 website: https://serahill.net/
