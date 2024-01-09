@@ -1,5 +1,6 @@
 package net.serahill.floatdamage;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -19,12 +20,14 @@ import static net.serahill.floatdamage.FloatDamage.plugin;
 
 public class DmgManager implements Listener {
 
+    private final FloatDamage plugin;
     FileConfiguration config;
     ConfigurationSection enabledEntities;
 
     public DmgManager(FloatDamage plugin) {
         config = plugin.getConfig();
         enabledEntities = config.getConfigurationSection("enabled");
+        this.plugin = plugin;
     }
 
     @EventHandler
@@ -35,26 +38,24 @@ public class DmgManager implements Listener {
         if ( !(attacker instanceof Player)) return;
         if ( !(defender instanceof Mob) && !(defender instanceof Player) ) return;
 
-        boolean enabledMonsters = enabledEntities.getBoolean("monster");
-        boolean enabledAnimal = enabledEntities.getBoolean("animal");
-        boolean enabledPlayer = enabledEntities.getBoolean("player");
+        if ( !isEnabled(defender)) return;
 
-        // Check if defender is an animal and if animal damage is enabled, return if both are true
-        if ( (defender instanceof Animals) && !(enabledAnimal) ) return;
+        String prefix = colorize(config.getString("prefix"));
+        String suffix = colorize(config.getString("suffix"));
+        boolean aboveHead = config.getBoolean("aboveHead");
 
-        // Check if defender is a monster and if animal damage is enabled, return if both are true
-        if ( (defender instanceof Monster) && !(enabledMonsters) ) return;
+        if (aboveHead) {
+            showAboveHead(defender, prefix, suffix, event);
+            return;
+        }
+        floatDamage(defender, prefix, suffix, event);
+    }
 
-        // Check if defender is a player and if animal damage is enabled, return if both are true
-        if ( (defender instanceof Player) && (!enabledPlayer) ) return;
-        if ( (defender instanceof ArmorStand) ) return;
+    public void floatDamage(Entity defender, String prefix, String suffix, EntityDamageByEntityEvent event) {
 
         Random rand = new Random();
         Location loc = defender.getLocation().clone();
         loc.add(new Vector(.5 * (rand.nextBoolean() ? -1 : 0), 1.9f, .5 * (rand.nextBoolean() ? -1 : 0)));
-
-        String prefix = colorize(config.getString("prefix"));
-        String suffix = colorize(config.getString("suffix"));
 
         TextDisplay floatDisplay = defender.getWorld().spawn(loc, TextDisplay.class);
         floatDisplay.setText(prefix + String.valueOf(round(event.getFinalDamage(), 1)) + suffix);
@@ -68,6 +69,72 @@ public class DmgManager implements Listener {
                 floatDisplay.remove();
             }
         }.runTaskLater(plugin, 10);
+    }
+
+    private ArmorStand spawnInvisibleArmorStand(Location location, String customName) {
+        ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location.add(0, 100, 0), EntityType.ARMOR_STAND);
+        armorStand.setVisible(false);
+        armorStand.setGravity(false);
+        armorStand.setBasePlate(false);
+        armorStand.setCustomNameVisible(true);
+        armorStand.setCustomName(customName);
+        armorStand.isSmall();
+        armorStand.teleport(location.add(0, 0.2, 0));
+        return armorStand;
+    }
+
+
+    public void showAboveHead(Entity defender, String prefix, String suffix, EntityDamageByEntityEvent event) {
+
+        int taskId = 0;
+
+        ArmorStand armorStand = spawnInvisibleArmorStand(
+                defender.getLocation().add(0, 100, 0),
+                prefix + String.valueOf(round(event.getFinalDamage(), 1)) + suffix
+        );
+
+        int finalTaskId = taskId;
+
+        taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            if (defender.isValid()) {
+                armorStand.teleport(defender.getLocation());
+            } else {
+                armorStand.remove();
+                Bukkit.getScheduler().cancelTask(finalTaskId);
+            }
+        }, 0L, 1L); // 0L for immediate start, 1L for 1-tick interval
+
+
+        new BukkitRunnable(){
+            @Override
+            public void run(){
+                armorStand.remove();
+                //check if finalTaskId is something else than 0, if it is, cancel the task
+                if (finalTaskId != 0) Bukkit.getScheduler().cancelTask(finalTaskId);
+            }
+        }.runTaskLater(plugin, 20);
+
+    }
+
+    public boolean isEnabled(Entity defender) {
+
+        boolean enabledMonsters = enabledEntities.getBoolean("monster");
+        boolean enabledAnimal = enabledEntities.getBoolean("animal");
+        boolean enabledPlayer = enabledEntities.getBoolean("player");
+
+        // Check if defender is an animal and if damage is enabled, return if both are true
+        if ( (defender instanceof Animals) && !(enabledAnimal) ) return false;
+
+        // Check if defender is a monster and if damage is enabled, return if both are true
+        if ( (defender instanceof Monster) && !(enabledMonsters) ) return false;
+
+        // Check if defender is a player and if damage is enabled, return if both are true
+        if ( (defender instanceof Player) && (!enabledPlayer) ) return false;
+
+        // Check if defender is an armorstand and if damage is enabled, return if both are true
+        if ( (defender instanceof ArmorStand) ) return false;
+
+        return true;
     }
 
     public static double round(double value, int places) {

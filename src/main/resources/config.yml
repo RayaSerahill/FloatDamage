@@ -1,7 +1,5 @@
-# Prefix for the FloatingDamage
+# Prefix and suffix for the FloatingDamage
 prefix: "&c-"
-
-# Suffix for the FloatingDamage
 suffix: ""
 
 # Which entities should spawn Floating Damage indicators when damaged?
@@ -10,3 +8,6 @@ enabled:
   monster: true
   animal: false
   player: true
+
+# Should the damage indicator be shown above the entity instead?
+aboveHead: true
