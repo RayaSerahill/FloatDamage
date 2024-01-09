@@ -1,6 +1,5 @@
 package net.serahill.floatdamage;
 
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class FloatDamage extends JavaPlugin {

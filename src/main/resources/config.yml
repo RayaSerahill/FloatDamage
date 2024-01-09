@@ -9,5 +9,5 @@ enabled:
   animal: false
   player: true
 
-# Should the damage indicator be shown above the entity instead?
-aboveHead: true
+# Should the damage indicator be shown above the entity instead of around it?
+aboveHead: false
